@@ -7,6 +7,7 @@ Licensed under the MIT License (see LICENSE for details)
 Written by Waleed Abdulla
 """
 
+import os
 import random
 import itertools
 import colorsys
@@ -17,6 +18,7 @@ import matplotlib.patches as patches
 import matplotlib.lines as lines
 from matplotlib.patches import Polygon
 import IPython.display
+import skimage.io
 
 import utils
 
@@ -73,7 +75,7 @@ def apply_mask(image, mask, color, alpha=0.5):
     return image
 
 
-def display_instances(image, boxes, masks, class_ids, class_names,
+def display_instances(imgname, OUTPUT_PATH, image, boxes, masks, class_ids, class_names,
                       scores=None, title="",
                       figsize=(16, 16), ax=None):
     """
@@ -85,10 +87,16 @@ def display_instances(image, boxes, masks, class_ids, class_names,
     figsize: (optional) the size of the image.
     """
     # Number of instances
+
+
     N = boxes.shape[0]
+    # N = 1
+
+
     if not N:
         print("\n*** No instances to display *** \n")
     else:
+        # print(boxes.shape[0], masks.shape[-1], class_ids.shape[0])
         assert boxes.shape[0] == masks.shape[-1] == class_ids.shape[0]
 
     if not ax:
@@ -143,7 +151,10 @@ def display_instances(image, boxes, masks, class_ids, class_names,
             p = Polygon(verts, facecolor="none", edgecolor=color)
             ax.add_patch(p)
     ax.imshow(masked_image.astype(np.uint8))
-    plt.show()
+    # save image
+    skimage.io.imsave(os.path.join(OUTPUT_PATH, imgname), masked_image.astype(np.uint8))
+    # uncomment to display
+    # plt.show()
     
 
 def draw_rois(image, rois, refined_rois, mask, class_ids, class_names, limit=10):

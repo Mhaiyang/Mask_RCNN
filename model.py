@@ -1,10 +1,8 @@
 """
 Mask R-CNN
-The main Mask R-CNN model implemenetation.
+The main Mask R-CNN model implementation.
 
-Copyright (c) 2017 Matterport, Inc.
-Licensed under the MIT License (see LICENSE for details)
-Written by Waleed Abdulla
+Written by Taylor Mei
 """
 
 import os
@@ -166,7 +164,7 @@ def resnet_graph(input_image, architecture, stage5=False):
     x = conv_block(x, 3, [256, 256, 1024], stage=4, block='a')
     block_count = {"resnet50": 5, "resnet101": 22}[architecture]
     for i in range(block_count):
-        x = identity_block(x, 3, [256, 256, 1024], stage=4, block=chr(98 + i))
+        x = identity_block(x, 3, [256, 256, 1024], stage=4, block=chr(98 + i)) # 98 is b
     C4 = x
     # Stage 5
     if stage5:
@@ -1818,9 +1816,10 @@ class MaskRCNN():
                     name="input_gt_masks", dtype=bool)
 
         # Build the shared convolutional layers.
-        # Bottom-up Layers
+        # Down-top Layers
         # Returns a list of the last layers of each stage, 5 in total.
-        # Don't create the thead (stage 5), so we pick the 4th item in the list.
+        # Don't create the head (stage 1), so we pick the 4th item in the list.
+        # C1 is exclude because it is computing consuming
         _, C2, C3, C4, C5 = resnet_graph(input_image, config.BACKBONE, stage5=True)
         # Top-down Layers
         # TODO: add assert to varify feature map sizes match what's in config
@@ -1847,7 +1846,7 @@ class MaskRCNN():
         rpn_feature_maps = [P2, P3, P4, P5, P6]
         mrcnn_feature_maps = [P2, P3, P4, P5]
 
-        # Generate Anchors
+        # Generate Anchors: [anchor_count, (y1, x1, y2, x2)]
         self.anchors = utils.generate_pyramid_anchors(config.RPN_ANCHOR_SCALES,
                                                       config.RPN_ANCHOR_RATIOS,
                                                       config.BACKBONE_SHAPES,
@@ -1856,7 +1855,7 @@ class MaskRCNN():
 
         # RPN Model
         rpn = build_rpn_model(config.RPN_ANCHOR_STRIDE,
-                              len(config.RPN_ANCHOR_RATIOS), 256)
+                              len(config.RPN_ANCHOR_RATIOS), 256)  # (1, 3, 256)
         # Loop through pyramid layers
         layer_outputs = []  # list of lists
         for p in rpn_feature_maps:
@@ -2174,7 +2173,7 @@ class MaskRCNN():
         learning_rate: The learning rate to train with
         epochs: Number of training epochs. Note that previous training epochs
                 are considered to be done alreay, so this actually determines
-                the epochs to train in total rather than in this particaular
+                the epochs to train in total rather than in this particular
                 call.
         layers: Allows selecting wich layers to train. It can be:
             - A regular expression to match layer names to train
@@ -2200,6 +2199,7 @@ class MaskRCNN():
         }
         if layers in layer_regex.keys():
             layers = layer_regex[layers]
+            print(layers)
 
         # Data generators
         train_generator = data_generator(train_dataset, self.config, shuffle=True,
